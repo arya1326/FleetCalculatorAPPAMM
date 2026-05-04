@@ -8,9 +8,9 @@ class AuthService {
   static const String _userKey       = 'current_user';
   static const String _isLoggedInKey = 'isLoggedIn';
 
-
-  Future<bool> login(String email, String password) async {
-    final result = await _apiService.login(email, password);
+  Future<bool> login(String name, String nrp) async {
+    // Login dengan nama lengkap dan NRP
+    final result = await _apiService.login(name, nrp);
     if (result['success'] == true) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userKey, jsonEncode(result['user']));

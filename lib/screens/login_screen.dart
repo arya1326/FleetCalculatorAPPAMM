@@ -9,14 +9,12 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _nrpController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
-  bool _obscurePassword = true;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -37,8 +35,8 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _animController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
+    _nameController.dispose();
+    _nrpController.dispose();
     super.dispose();
   }
 
@@ -46,8 +44,8 @@ class _LoginScreenState extends State<LoginScreen>
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       final success = await _authService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
+        _nameController.text.trim(),
+        _nrpController.text.trim(),
       );
       setState(() => _isLoading = false);
       if (success && mounted) {
@@ -62,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen>
               children: [
                 Icon(Icons.error_outline, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Email atau password salah'),
+                Text('Nama lengkap atau NRP tidak terdaftar'),
               ],
             ),
             backgroundColor: Colors.red.shade800,
@@ -86,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFFB71C1C), Color(0xFFE53935), Color(0xFFEF5350)],
-                stops: [0.0, 0.5, 1.0],
               ),
             ),
           ),
@@ -174,12 +171,11 @@ class _LoginScreenState extends State<LoginScreen>
                             fontSize: 13,
                             color: Colors.white,
                             fontWeight: FontWeight.w500,
-                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
                       const SizedBox(height: 44),
-                      // Card
+                      // Form Card
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -199,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Masuk ke Akun',
+                                'Login',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
@@ -208,27 +204,27 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Selamat datang kembali',
+                                'Masukkan Nama Lengkap dan NRP Anda',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey.shade500,
                                 ),
                               ),
                               const SizedBox(height: 24),
+                              // Field Nama Lengkap
                               TextFormField(
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
+                                controller: _nameController,
                                 style: const TextStyle(fontSize: 15),
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
-                                  hintText: 'nama@email.com',
+                                  labelText: 'Nama Lengkap',
+                                  hintText: 'Masukkan nama lengkap Anda',
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFFEBEE),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Icon(Icons.email_rounded,
+                                    child: const Icon(Icons.person_rounded,
                                         color: Color(0xFFB71C1C), size: 20),
                                   ),
                                   filled: true,
@@ -250,36 +246,27 @@ class _LoginScreenState extends State<LoginScreen>
                                       vertical: 16, horizontal: 16),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Email tidak boleh kosong';
-                                  if (!v.contains('@')) return 'Email tidak valid';
+                                  if (v == null || v.isEmpty) return 'Nama lengkap tidak boleh kosong';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 16),
+                              // Field NRP
                               TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
+                                controller: _nrpController,
+                                keyboardType: TextInputType.number,
                                 style: const TextStyle(fontSize: 15),
                                 decoration: InputDecoration(
-                                  labelText: 'Password',
+                                  labelText: 'NRP',
+                                  hintText: 'Masukkan NRP Anda',
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFFEBEE),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Icon(Icons.lock_rounded,
+                                    child: const Icon(Icons.badge_rounded,
                                         color: Color(0xFFB71C1C), size: 20),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_rounded
-                                          : Icons.visibility_rounded,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    onPressed: () =>
-                                        setState(() => _obscurePassword = !_obscurePassword),
                                   ),
                                   filled: true,
                                   fillColor: Colors.grey.shade50,
@@ -300,12 +287,13 @@ class _LoginScreenState extends State<LoginScreen>
                                       vertical: 16, horizontal: 16),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Password tidak boleh kosong';
-                                  if (v.length < 4) return 'Password minimal 4 karakter';
+                                  if (v == null || v.isEmpty) return 'NRP tidak boleh kosong';
+                                  if (v.length < 5) return 'NRP minimal 5 digit';
                                   return null;
                                 },
                               ),
                               const SizedBox(height: 28),
+                              // Login Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 52,
@@ -315,7 +303,6 @@ class _LoginScreenState extends State<LoginScreen>
                                     backgroundColor: const Color(0xFFB71C1C),
                                     foregroundColor: Colors.white,
                                     elevation: 4,
-                                    shadowColor: const Color(0xFFB71C1C).withOpacity(0.4),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -344,7 +331,6 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       const SizedBox(height: 28),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
