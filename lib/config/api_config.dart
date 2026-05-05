@@ -2,7 +2,7 @@ class ApiConfig {
   // Ganti dengan IP server/localhost Anda
   // Untuk emulator Android: 10.0.2.2
   // Untuk device fisik: IP komputer/server
-  static const String baseUrl = 'http://localhost/fleet_calculator';
+  static const String baseUrl = 'https://member.simasbon.org';
   
   // Endpoints
   static const String login = '$baseUrl/api/login.php';

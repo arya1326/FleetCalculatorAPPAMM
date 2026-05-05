@@ -83,18 +83,27 @@ class ApiService {
         Uri.parse(ApiConfig.getCalculations),
         headers: await _headers(),
       );
+
+      // Debug: print response untuk sementara
+      print('GET calculations status: ${response.statusCode}');
+      print('GET calculations body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['calculations'] != null) {
           final List<dynamic> list = data['calculations'];
           return list
-              .map((json) =>
-                  CalculationModel.fromMap(json['id'].toString(), json))
+              .map((json) => CalculationModel.fromMap(json['id'].toString(), json))
               .toList();
         }
+      } else if (response.statusCode == 401) {
+        // Token expired atau tidak valid
+        print('Token tidak valid, perlu login ulang');
       }
       return [];
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Error getCalculations: $e');
+      print('StackTrace: $stackTrace');
       return [];
     }
   }
