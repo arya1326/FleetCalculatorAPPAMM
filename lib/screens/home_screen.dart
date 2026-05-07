@@ -519,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Expanded(
                       child: _buildStatTile(
                         'Match Factor',
-                        calc.matchFactor.toStringAsFixed(2),
+                        calc.matchFactor.toStringAsFixed(1),
                         '',
                         Icons.analytics_rounded,
                         const Color(0xFF00695C),

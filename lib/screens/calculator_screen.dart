@@ -1,3 +1,4 @@
+// calculator_screen.dart - MODIFIKASI DENGAN WILLPOPScope
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -20,12 +21,16 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       TextEditingController(text: '2');
   final TextEditingController _actualHaulerController =
       TextEditingController(text: '5');
-  final TextEditingController _loadingTimeController =
-      TextEditingController(text: '2');
-  final TextEditingController _speedController =
-      TextEditingController(text: '25');
-  final TextEditingController _dumpingTimeController =
-      TextEditingController(text: '1.5');
+  
+  // FIXED VALUES - OVERBURDEN
+  static const double obLoadingTime = 3.9;
+  static const double obSpeed = 20;
+  static const double obDumpingTime = 0.5;
+  
+  // FIXED VALUES - COAL
+  static const double coalLoadingTime = 1.5;
+  static const double coalSpeed = 20;
+  static const double coalDumpingTime = 0.6;
 
   final Map<String, double> _obLoaderOptions = {
     'PC200 (100 BCM/Jam)': 100,
@@ -54,6 +59,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   double? _matchFactor;
   String? _status;
   bool _isCalculated = false;
+  bool _hasNewCalculation = false; // Flag untuk tracking apakah ada perhitungan baru
 
   late AnimationController _resultAnimController;
   late Animation<double> _resultScaleAnim;
@@ -76,9 +82,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     _resultAnimController.dispose();
     _distanceController.dispose();
     _actualHaulerController.dispose();
-    _loadingTimeController.dispose();
-    _speedController.dispose();
-    _dumpingTimeController.dispose();
     super.dispose();
   }
 
@@ -120,14 +123,28 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     }
   }
 
+  double _getLoadingTime() {
+    return _selectedMaterial == 'OB' ? obLoadingTime : coalLoadingTime;
+  }
+
+  double _getSpeed() {
+    return _selectedMaterial == 'OB' ? obSpeed : coalSpeed;
+  }
+
+  double _getDumpingTime() {
+    return _selectedMaterial == 'OB' ? obDumpingTime : coalDumpingTime;
+  }
+
+  double _getEffectiveLoaderProd() {
+    // loader productivity * 0.9
+    return _loaderProd * 0.9;
+  }
+
   Future<void> _calculateAndSave() async {
     final distance = double.tryParse(_distanceController.text) ?? 0;
     final actualHauler = int.tryParse(_actualHaulerController.text) ?? 0;
-    final speed = double.tryParse(_speedController.text) ?? 0;
-    final loadingTime = double.tryParse(_loadingTimeController.text) ?? 0;
-    final dumpingTime = double.tryParse(_dumpingTimeController.text) ?? 0;
 
-    if (distance <= 0 || actualHauler <= 0 || speed <= 0) {
+    if (distance <= 0 || actualHauler <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
@@ -145,11 +162,15 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       return;
     }
 
+    final loadingTime = _getLoadingTime();
+    final speed = _getSpeed();
+    final dumpingTime = _getDumpingTime();
+    final effectiveLoaderProd = _getEffectiveLoaderProd();
+
     final cycleTime = ((distance * 2) / speed * 60) + loadingTime + dumpingTime;
     final recommended =
-        ((_loaderProd * cycleTime) / (_haulerCap * 60)).ceil();
-    final matchFactor =
-        (actualHauler * _haulerCap * 60) / (_loaderProd * cycleTime);
+        ((effectiveLoaderProd * cycleTime) / (_haulerCap * 60)).ceil();
+    final matchFactor = (actualHauler * _haulerCap * 60) / (effectiveLoaderProd * cycleTime);
 
     String status;
     if (matchFactor < 0.9) {
@@ -166,6 +187,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       _matchFactor = matchFactor;
       _status = status;
       _isCalculated = true;
+      _hasNewCalculation = true; // Set flag true karena ada perhitungan baru
     });
 
     _resultAnimController.forward(from: 0);
@@ -177,7 +199,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
         material: _selectedMaterial,
         distance: distance,
         actualHauler: actualHauler,
-        loaderProd: _loaderProd,
+        loaderProd: effectiveLoaderProd,
         loaderName: _selectedLoader,
         haulerCap: _haulerCap,
         haulerName: _selectedHauler,
@@ -191,10 +213,25 @@ class _CalculatorScreenState extends State<CalculatorScreen>
         timestamp: DateTime.now(),
       );
       await _databaseService.saveCalculation(calculation, currentUser['email']);
-    }
-
-    if (mounted) {
-      Navigator.pop(context, true);
+      
+      // Tampilkan snackbar sukses
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Perhitungan berhasil disimpan'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -212,222 +249,289 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text(
-          'Fleet Calculator',
-          style: TextStyle(fontWeight: FontWeight.w700),
+    return WillPopScope(
+      onWillPop: () async {
+        // Kembalikan nilai true ke halaman sebelumnya jika ada perhitungan baru
+        Navigator.pop(context, _hasNewCalculation);
+        return false; // Mencegah pop default karena kita sudah handle sendiri
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        appBar: AppBar(
+          title: const Text(
+            'Fleet Calculator',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: const Color(0xFFB71C1C),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: () {
+              // Kembali ke home dengan signal refresh jika ada perhitungan baru
+              Navigator.pop(context, _hasNewCalculation);
+            },
+          ),
         ),
-        backgroundColor: const Color(0xFFB71C1C),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Material toggle
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: ['OB', 'COAL'].map((material) {
-                  final isSelected = _selectedMaterial == material;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedMaterial = material;
-                          _updateOptions();
-                          _isCalculated = false;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFFB71C1C)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              material == 'OB'
-                                  ? Icons.terrain_rounded
-                                  : Icons.local_fire_department_rounded,
-                              size: 18,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              material == 'OB' ? 'Overburden' : 'Coal',
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.grey.shade600,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            // Operational Parameters
-            _buildSection(
-              title: 'Parameter Operasional',
-              icon: Icons.tune_rounded,
-              children: [
-                _buildTextField(
-                  controller: _distanceController,
-                  label: 'Jarak Hauling',
-                  suffix: 'KM',
-                  icon: Icons.route_rounded,
-                ),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  controller: _actualHaulerController,
-                  label: 'Jumlah Hauler Aktual',
-                  suffix: 'Unit',
-                  icon: Icons.local_shipping_rounded,
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Loader Parameter
-            _buildSection(
-              title: 'Parameter Loader',
-              icon: Icons.construction_rounded,
-              children: [
-                _buildDropdown(
-                  label: 'Plan Productivity Loader',
-                  value: _selectedLoader,
-                  items: (_selectedMaterial == 'OB'
-                          ? _obLoaderOptions
-                          : _coalLoaderOptions)
-                      .keys
-                      .toList(),
-                  onChanged: _onLoaderChanged,
-                  icon: Icons.precision_manufacturing_rounded,
-                ),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  controller: _loadingTimeController,
-                  label: 'Loading Time',
-                  suffix: 'menit',
-                  icon: Icons.timer_rounded,
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Hauler Parameter
-            _buildSection(
-              title: 'Parameter Hauler',
-              icon: Icons.local_shipping_rounded,
-              children: [
-                _buildDropdown(
-                  label: 'Plan Capacity Vessel Hauler',
-                  value: _selectedHauler,
-                  items: (_selectedMaterial == 'OB'
-                          ? _obHaulerOptions
-                          : _coalHaulerOptions)
-                      .keys
-                      .toList(),
-                  onChanged: _onHaulerChanged,
-                  icon: Icons.inventory_2_rounded,
-                ),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  controller: _speedController,
-                  label: 'Kecepatan Rata-rata',
-                  suffix: 'Km/jam',
-                  icon: Icons.speed_rounded,
-                ),
-                const SizedBox(height: 12),
-                _buildTextField(
-                  controller: _dumpingTimeController,
-                  label: 'Spotting + Dumping Time',
-                  suffix: 'menit',
-                  icon: Icons.hourglass_bottom_rounded,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Calculate Button
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: _calculateAndSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFB71C1C),
-                  foregroundColor: Colors.white,
-                  elevation: 6,
-                  shadowColor: const Color(0xFFB71C1C).withOpacity(0.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.calculate_rounded, size: 22),
-                    SizedBox(width: 10),
-                    Text(
-                      'HITUNG MATCH FACTOR',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Material toggle
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Result
-            if (_isCalculated && _cycleTime != null)
-              ScaleTransition(
-                scale: _resultScaleAnim,
-                child: FadeTransition(
-                  opacity: _resultFadeAnim,
-                  child: _buildResultCard(),
+                child: Row(
+                  children: ['OB', 'COAL'].map((material) {
+                    final isSelected = _selectedMaterial == material;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedMaterial = material;
+                            _updateOptions();
+                            _isCalculated = false;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFB71C1C)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                material == 'OB'
+                                    ? Icons.terrain_rounded
+                                    : Icons.local_fire_department_rounded,
+                                size: 18,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade500,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                material == 'OB' ? 'Overburden' : 'Coal',
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.grey.shade600,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.normal,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
 
-            const SizedBox(height: 16),
-          ],
+              // Operational Parameters
+              _buildSection(
+                title: 'Parameter Operasional',
+                icon: Icons.tune_rounded,
+                children: [
+                  _buildTextField(
+                    controller: _distanceController,
+                    label: 'Jarak Hauling',
+                    suffix: 'KM',
+                    icon: Icons.route_rounded,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _actualHaulerController,
+                    label: 'Jumlah Hauler Aktual',
+                    suffix: 'Unit',
+                    icon: Icons.local_shipping_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Loader Parameter
+              _buildSection(
+                title: 'Parameter Loader',
+                icon: Icons.construction_rounded,
+                children: [
+                  _buildDropdown(
+                    label: 'Plan Productivity Loader',
+                    value: _selectedLoader,
+                    items: (_selectedMaterial == 'OB'
+                            ? _obLoaderOptions
+                            : _coalLoaderOptions)
+                        .keys
+                        .toList(),
+                    onChanged: _onLoaderChanged,
+                    icon: Icons.precision_manufacturing_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Hauler Parameter
+              _buildSection(
+                title: 'Parameter Hauler',
+                icon: Icons.local_shipping_rounded,
+                children: [
+                  _buildDropdown(
+                    label: 'Plan Capacity Vessel Hauler',
+                    value: _selectedHauler,
+                    items: (_selectedMaterial == 'OB'
+                            ? _obHaulerOptions
+                            : _coalHaulerOptions)
+                        .keys
+                        .toList(),
+                    onChanged: _onHaulerChanged,
+                    icon: Icons.inventory_2_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Info Panel for Fixed Values
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8F8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded, size: 18, color: const Color(0xFFB71C1C)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Parameter Tetap',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: const Color(0xFFB71C1C),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (_selectedMaterial == 'OB') ...[
+                      _buildFixedParam('Loading Time', '3.9 menit'),
+                      _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
+                      _buildFixedParam('Spotting + Dumping Time', '0.5 menit'),
+                      _buildFixedParam('Efisiensi Loader', '90%'),
+                    ] else ...[
+                      _buildFixedParam('Loading Time', '1.5 menit'),
+                      _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
+                      _buildFixedParam('Spotting + Dumping Time', '0.6 menit'),
+                      _buildFixedParam('Efisiensi Loader', '90%'),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Calculate Button
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _calculateAndSave,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB71C1C),
+                    foregroundColor: Colors.white,
+                    elevation: 6,
+                    shadowColor: const Color(0xFFB71C1C).withOpacity(0.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calculate_rounded, size: 22),
+                      SizedBox(width: 10),
+                      Text(
+                        'HITUNG MATCH FACTOR',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Result
+              if (_isCalculated && _cycleTime != null)
+                ScaleTransition(
+                  scale: _resultScaleAnim,
+                  child: FadeTransition(
+                    opacity: _resultFadeAnim,
+                    child: _buildResultCard(),
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFixedParam(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFB71C1C),
+              shape: BoxShape.circle,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFB71C1C),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -667,7 +771,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     Expanded(
                       child: _buildResultTile(
                         'Match Factor',
-                        _matchFactor!.toStringAsFixed(2),
+                        _matchFactor!.toStringAsFixed(1),
                         '',
                         Icons.analytics_rounded,
                         statusColor,

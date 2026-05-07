@@ -1,3 +1,4 @@
+// history_screen.dart - MODIFIKASI
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -46,113 +47,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     _animationController.forward(from: 0);
   }
 
-  Future<void> _clearHistory() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Hapus History',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        content: const Text('Apakah Anda yakin ingin menghapus semua history kalkulasi?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB71C1C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      final currentUser = await _authService.getCurrentUser();
-      if (currentUser != null) {
-        await _databaseService.clearHistory(currentUser['email']);
-        await _loadHistory();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('History berhasil dihapus'),
-                ],
-              ),
-              backgroundColor: const Color(0xFF2E7D32),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _deleteSingleCalculation(String id) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Hapus Data',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        content: const Text('Apakah Anda yakin ingin menghapus data ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFB71C1C),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      final currentUser = await _authService.getCurrentUser();
-      if (currentUser != null) {
-        await _databaseService.deleteCalculation(currentUser['email'], id);
-        await _loadHistory();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Data berhasil dihapus'),
-                ],
-              ),
-              backgroundColor: const Color(0xFF2E7D32),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      }
-    }
-  }
+  // HAPUS method _clearHistory dan _deleteSingleCalculation
 
   Color _getStatusColor(String status) {
     if (status == 'UNDER TRUCK') return const Color(0xFFB71C1C);
@@ -190,22 +85,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        actions: [
-          if (_calculations.isNotEmpty)
-            IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.delete_sweep_rounded, size: 20),
-              ),
-              onPressed: _clearHistory,
-              tooltip: 'Hapus semua',
-            ),
-          const SizedBox(width: 8),
-        ],
+        // HAPUS actions IconButton untuk clear history
       ),
       body: _isLoading
           ? const Center(
@@ -305,208 +185,195 @@ class _HistoryScreenState extends State<HistoryScreen>
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       color: Colors.white,
-      child: Dismissible(
-        key: Key(calc.id),
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFB71C1C),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
-        ),
-        direction: DismissDirection.endToStart,
-        onDismissed: (_) => _deleteSingleCalculation(calc.id),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF8F8),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade100),
-                ),
+      // HAPUS Dismissible
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8F8),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade100),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEE),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          calc.material == 'OB'
-                              ? Icons.terrain_rounded
-                              : Icons.local_fire_department_rounded,
-                          size: 14,
-                          color: const Color(0xFFB71C1C),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          calc.material == 'OB' ? 'Overburden' : 'Coal',
-                          style: const TextStyle(
-                            color: Color(0xFFB71C1C),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  Row(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.access_time_rounded,
-                          size: 14, color: Colors.grey.shade400),
-                      const SizedBox(width: 4),
+                      Icon(
+                        calc.material == 'OB'
+                            ? Icons.terrain_rounded
+                            : Icons.local_fire_department_rounded,
+                        size: 14,
+                        color: const Color(0xFFB71C1C),
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                        _formatDateTime(calc.timestamp),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
+                        calc.material == 'OB' ? 'Overburden' : 'Coal',
+                        style: const TextStyle(
+                          color: Color(0xFFB71C1C),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.access_time_rounded,
+                        size: 14, color: Colors.grey.shade400),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDateTime(calc.timestamp),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  Row(
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildResultTile(
+                        'Cycle Time',
+                        calc.cycleTime.toStringAsFixed(1),
+                        'menit',
+                        Icons.timer_rounded,
+                        const Color(0xFF1565C0),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildResultTile(
+                        'Rek. Hauler',
+                        '${calc.recommendedHauler}',
+                        'unit',
+                        Icons.local_shipping_rounded,
+                        const Color(0xFF6A1B9A),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildResultTile(
+                        'Match Factor',
+                        calc.matchFactor.toStringAsFixed(1), // 1 digit after comma
+                        '',
+                        Icons.analytics_rounded,
+                        statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Status card
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: statusColor.withOpacity(0.25),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: _buildResultTile(
-                          'Cycle Time',
-                          calc.cycleTime.toStringAsFixed(1),
-                          'menit',
-                          Icons.timer_rounded,
-                          const Color(0xFF1565C0),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildResultTile(
-                          'Rek. Hauler',
-                          '${calc.recommendedHauler}',
-                          'unit',
-                          Icons.local_shipping_rounded,
-                          const Color(0xFF6A1B9A),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildResultTile(
-                          'Match Factor',
-                          calc.matchFactor.toStringAsFixed(2),
-                          '',
-                          Icons.analytics_rounded,
-                          statusColor,
+                      Icon(_getStatusIcon(calc.status),
+                          color: statusColor, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        calc.status,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  // Status card
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: statusColor.withOpacity(0.25),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(_getStatusIcon(calc.status),
-                            color: statusColor, size: 20),
-                        const SizedBox(width: 10),
-                        Text(
-                          calc.status,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            letterSpacing: 0.5,
+                ),
+                const SizedBox(height: 14),
+                // Additional info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          _buildInfoItem(
+                            'Loader',
+                            calc.loaderName,
+                            Icons.construction_rounded,
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 12),
+                          _buildInfoItem(
+                            'Hauler',
+                            calc.haulerName,
+                            Icons.local_shipping_rounded,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildInfoItem(
+                            'Jarak',
+                            '${calc.distance} KM',
+                            Icons.route_rounded,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoItem(
+                            'Speed',
+                            '${calc.speed} Km/jam',
+                            Icons.speed_rounded,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoItem(
+                            'Aktual vs Rek',
+                            '${calc.actualHauler} / ${calc.recommendedHauler} unit',
+                            Icons.compare_arrows_rounded,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 14),
-                  // Additional info
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            _buildInfoItem(
-                              'Loader',
-                              calc.loaderName,
-                              Icons.construction_rounded,
-                            ),
-                            const SizedBox(width: 12),
-                            _buildInfoItem(
-                              'Hauler',
-                              calc.haulerName,
-                              Icons.local_shipping_rounded,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            _buildInfoItem(
-                              'Jarak',
-                              '${calc.distance} KM',
-                              Icons.route_rounded,
-                            ),
-                            const SizedBox(width: 12),
-                            _buildInfoItem(
-                              'Speed',
-                              '${calc.speed} Km/jam',
-                              Icons.speed_rounded,
-                            ),
-                            const SizedBox(width: 12),
-                            _buildInfoItem(
-                              'Aktual vs Rek',
-                              '${calc.actualHauler} / ${calc.recommendedHauler} unit',
-                              Icons.compare_arrows_rounded,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

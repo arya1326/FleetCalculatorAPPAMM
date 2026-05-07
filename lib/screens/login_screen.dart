@@ -288,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'NRP tidak boleh kosong';
-                                  if (v.length < 5) return 'NRP minimal 5 digit';
+                                  if (v.length < 8) return 'NRP minimal 8 digit'; // Ubah dari 5 ke 8
                                   return null;
                                 },
                               ),
