@@ -1,4 +1,4 @@
-// calculator_screen.dart - MODIFIKASI DENGAN WILLPOPScope
+
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -25,12 +25,14 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   // FIXED VALUES - OVERBURDEN
   static const double obLoadingTime = 3.9;
   static const double obSpeed = 20;
-  static const double obDumpingTime = 0.5;
+  static const double obSpottingTime = 0.5;  // Spotting time
+  static const double obDumpingTime = 1.0;    // Dumping time (1 menit)
   
   // FIXED VALUES - COAL
   static const double coalLoadingTime = 1.5;
   static const double coalSpeed = 20;
-  static const double coalDumpingTime = 0.6;
+  static const double coalSpottingTime = 0.6; // Spotting time
+  static const double coalDumpingTime = 1.0;   // Dumping time (1 menit)
 
   final Map<String, double> _obLoaderOptions = {
     'PC200 (100 BCM/Jam)': 100,
@@ -131,6 +133,10 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     return _selectedMaterial == 'OB' ? obSpeed : coalSpeed;
   }
 
+  double _getSpottingTime() {
+    return _selectedMaterial == 'OB' ? obSpottingTime : coalSpottingTime;
+  }
+
   double _getDumpingTime() {
     return _selectedMaterial == 'OB' ? obDumpingTime : coalDumpingTime;
   }
@@ -164,10 +170,14 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
     final loadingTime = _getLoadingTime();
     final speed = _getSpeed();
+    final spottingTime = _getSpottingTime();
     final dumpingTime = _getDumpingTime();
     final effectiveLoaderProd = _getEffectiveLoaderProd();
 
-    final cycleTime = ((distance * 2) / speed * 60) + loadingTime + dumpingTime;
+
+    final totalSpottingDumping = (spottingTime + dumpingTime) * 2;
+    final cycleTime = ((distance * 2) / speed * 60) + loadingTime + totalSpottingDumping;
+    
     final recommended =
         ((effectiveLoaderProd * cycleTime) / (_haulerCap * 60)).ceil();
     final matchFactor = (actualHauler * _haulerCap * 60) / (effectiveLoaderProd * cycleTime);
@@ -187,7 +197,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       _matchFactor = matchFactor;
       _status = status;
       _isCalculated = true;
-      _hasNewCalculation = true; // Set flag true karena ada perhitungan baru
+      _hasNewCalculation = true;
     });
 
     _resultAnimController.forward(from: 0);
@@ -214,7 +224,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       );
       await _databaseService.saveCalculation(calculation, currentUser['email']);
       
-      // Tampilkan snackbar sukses
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -440,12 +449,14 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     if (_selectedMaterial == 'OB') ...[
                       _buildFixedParam('Loading Time', '3.9 menit'),
                       _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
-                      _buildFixedParam('Spotting + Dumping Time', '0.5 menit'),
+                      _buildFixedParam('Spotting', '0.5 menit'),
+                      _buildFixedParam('Dumping', '1 menit'),
                       _buildFixedParam('Efisiensi Loader', '90%'),
                     ] else ...[
                       _buildFixedParam('Loading Time', '1.5 menit'),
                       _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
-                      _buildFixedParam('Spotting + Dumping Time', '0.6 menit'),
+                      _buildFixedParam('Spotting', '0.6 menit'),
+                      _buildFixedParam('Dumping', '1 menit'),
                       _buildFixedParam('Efisiensi Loader', '90%'),
                     ],
                   ],

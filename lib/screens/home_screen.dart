@@ -522,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         calc.matchFactor.toStringAsFixed(1),
                         '',
                         Icons.analytics_rounded,
-                        const Color(0xFF00695C),
+                        statusColor,
                       ),
                     ),
                   ],
