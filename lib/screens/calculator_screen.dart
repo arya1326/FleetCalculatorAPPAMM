@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -142,107 +141,120 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   double _getEffectiveLoaderProd() {
-    // loader productivity * 0.9
-    return _loaderProd * 0.9;
+  // LANGSUNG return loaderProd (tanpa * 0.9)
+    return _loaderProd;
   }
 
-  Future<void> _calculateAndSave() async {
-    final distance = double.tryParse(_distanceController.text) ?? 0;
-    final actualHauler = int.tryParse(_actualHaulerController.text) ?? 0;
+Future<void> _calculateAndSave() async {
+  final distance = double.tryParse(_distanceController.text) ?? 0;
+  final actualHauler = int.tryParse(_actualHaulerController.text) ?? 0;
 
-    if (distance <= 0 || actualHauler <= 0) {
+  if (distance <= 0 || actualHauler <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Harap isi semua nilai dengan benar'),
+          ],
+        ),
+        backgroundColor: Colors.orange.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+    return;
+  }
+
+  final loadingTime = _getLoadingTime();
+  final loadingSpeed = 19.0;  // Loading speed = 19 km/jam
+  final emptySpeed = 20.0;    // Empty speed = 20 km/jam
+  final spottingTime = _getSpottingTime();
+  final dumpingTime = _getDumpingTime();
+  final loaderProd = _getEffectiveLoaderProd();  // LANGSUNG tanpa * 0.9
+
+  // PERHITUNGAN TRAVEL TIME (dalam menit)
+  // Travel time loading = distance / loadingSpeed * 60
+  // Travel time empty = distance / emptySpeed * 60
+  final travelTimeLoading = (distance / loadingSpeed) * 60;
+  final travelTimeEmpty = (distance / emptySpeed) * 60;
+  
+  // CT = Travel Time Loading + Travel Time Empty + (Spotting Time x 2) + Loading Time + Dumping Time
+  final cycleTime = travelTimeLoading + travelTimeEmpty + (spottingTime * 2) + loadingTime + dumpingTime;
+  
+  // Recommended Hauler = loaderProd / (haulerCap / cycleTime * 60)
+  // Atau: loaderProd * cycleTime / (haulerCap * 60)
+  final recommended = (loaderProd * cycleTime / (_haulerCap * 60)).ceil();
+  
+  // Match Factor = (actualHauler * haulerCap * 60) / (loaderProd * cycleTime)
+  final matchFactorRaw = (actualHauler * _haulerCap * 60) / (loaderProd * cycleTime);
+  // Bulatkan ke 1 digit di belakang koma
+  final matchFactor = double.parse(matchFactorRaw.toStringAsFixed(1));
+
+  // STATUS berdasarkan perbandingan actual vs recommended
+  String status;
+  if (actualHauler < recommended) {
+    status = 'UNDER TRUCK';
+  } else if (actualHauler == recommended) {
+    status = 'IDEAL MATCH';
+  } else {
+    status = 'OVER TRUCK';
+  }
+
+  setState(() {
+    _cycleTime = cycleTime;
+    _recommendedHauler = recommended;
+    _matchFactor = matchFactor;
+    _status = status;
+    _isCalculated = true;
+    _hasNewCalculation = true;
+  });
+
+  _resultAnimController.forward(from: 0);
+
+  final currentUser = await _authService.getCurrentUser();
+  if (currentUser != null) {
+    final calculation = CalculationModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      material: _selectedMaterial,
+      distance: distance,
+      actualHauler: actualHauler,
+      loaderProd: loaderProd,  // LANGSUNG tanpa * 0.9
+      loaderName: _selectedLoader,
+      haulerCap: _haulerCap,
+      haulerName: _selectedHauler,
+      speed: emptySpeed,  // Simpan empty speed sebagai reference
+      loadingTime: loadingTime,
+      spottingTime: spottingTime,
+      dumpingTime: dumpingTime,
+      cycleTime: cycleTime,
+      recommendedHauler: recommended,
+      matchFactor: matchFactor,
+      status: status,
+      timestamp: DateTime.now(),
+    );
+    await _databaseService.saveCalculation(calculation, currentUser['email']);
+    
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.warning_rounded, color: Colors.white),
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               SizedBox(width: 8),
-              Text('Harap isi semua nilai dengan benar'),
+              Text('Perhitungan berhasil disimpan'),
             ],
           ),
-          backgroundColor: Colors.orange.shade700,
+          backgroundColor: Colors.green.shade700,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
-      return;
-    }
-
-    final loadingTime = _getLoadingTime();
-    final speed = _getSpeed();
-    final spottingTime = _getSpottingTime();
-    final dumpingTime = _getDumpingTime();
-    final effectiveLoaderProd = _getEffectiveLoaderProd();
-
-
-    final totalSpottingDumping = (spottingTime + dumpingTime) * 2;
-    final cycleTime = ((distance * 2) / speed * 60) + loadingTime + totalSpottingDumping;
-    
-    final recommended =
-        ((effectiveLoaderProd * cycleTime) / (_haulerCap * 60)).ceil();
-    final matchFactor = (actualHauler * _haulerCap * 60) / (effectiveLoaderProd * cycleTime);
-
-    String status;
-    if (matchFactor < 0.9) {
-      status = 'UNDER TRUCK';
-    } else if (matchFactor <= 1.1) {
-      status = 'IDEAL MATCH';
-    } else {
-      status = 'OVER TRUCK';
-    }
-
-    setState(() {
-      _cycleTime = cycleTime;
-      _recommendedHauler = recommended;
-      _matchFactor = matchFactor;
-      _status = status;
-      _isCalculated = true;
-      _hasNewCalculation = true;
-    });
-
-    _resultAnimController.forward(from: 0);
-
-    final currentUser = await _authService.getCurrentUser();
-    if (currentUser != null) {
-      final calculation = CalculationModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        material: _selectedMaterial,
-        distance: distance,
-        actualHauler: actualHauler,
-        loaderProd: effectiveLoaderProd,
-        loaderName: _selectedLoader,
-        haulerCap: _haulerCap,
-        haulerName: _selectedHauler,
-        speed: speed,
-        loadingTime: loadingTime,
-        dumpingTime: dumpingTime,
-        cycleTime: cycleTime,
-        recommendedHauler: recommended,
-        matchFactor: matchFactor,
-        status: status,
-        timestamp: DateTime.now(),
-      );
-      await _databaseService.saveCalculation(calculation, currentUser['email']);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text('Perhitungan berhasil disimpan'),
-              ],
-            ),
-            backgroundColor: Colors.green.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
     }
   }
+}
 
   Color _getStatusColor() {
     if (_status == 'UNDER TRUCK') return const Color(0xFFB71C1C);
@@ -420,48 +432,52 @@ class _CalculatorScreenState extends State<CalculatorScreen>
               const SizedBox(height: 24),
 
               // Info Panel for Fixed Values
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8F8),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline_rounded, size: 18, color: const Color(0xFFB71C1C)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Parameter Tetap',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: const Color(0xFFB71C1C),
-                          ),
+            Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8F8),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.2)),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (_selectedMaterial == 'OB') ...[
-                      _buildFixedParam('Loading Time', '3.9 menit'),
-                      _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
-                      _buildFixedParam('Spotting', '0.5 menit'),
-                      _buildFixedParam('Dumping', '1 menit'),
-                      _buildFixedParam('Efisiensi Loader', '90%'),
-                    ] else ...[
-                      _buildFixedParam('Loading Time', '1.5 menit'),
-                      _buildFixedParam('Kecepatan Rata-rata', '20 Km/jam'),
-                      _buildFixedParam('Spotting', '0.6 menit'),
-                      _buildFixedParam('Dumping', '1 menit'),
-                      _buildFixedParam('Efisiensi Loader', '90%'),
-                    ],
-                  ],
-                ),
-              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.info_outline_rounded, size: 18, color: const Color(0xFFB71C1C)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Parameter Tetap',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: const Color(0xFFB71C1C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            if (_selectedMaterial == 'OB') ...[
+                              _buildFixedParam('Loading Time', '3.9 menit'),
+                              _buildFixedParam('Loading Speed', '19 Km/jam'),
+                              _buildFixedParam('Empty Speed', '20 Km/jam'),
+                              _buildFixedParam('Spotting (2x)', '0.5 menit x 2 = 1.0 menit'),
+                              _buildFixedParam('Dumping', '1.0 menit'),
+                              _buildFixedParam('Total Spotting+Dumping', '2.0 menit'),
+                              _buildFixedParam('Efisiensi Loader', '90%'),  // TETAP DITAMPILKAN
+                            ] else ...[
+                              _buildFixedParam('Loading Time', '1.5 menit'),
+                              _buildFixedParam('Loading Speed', '19 Km/jam'),
+                              _buildFixedParam('Empty Speed', '20 Km/jam'),
+                              _buildFixedParam('Spotting (2x)', '0.6 menit x 2 = 1.2 menit'),
+                              _buildFixedParam('Dumping', '1.0 menit'),
+                              _buildFixedParam('Total Spotting+Dumping', '2.2 menit'),
+                              _buildFixedParam('Efisiensi Loader', '90%'),  // TETAP DITAMPILKAN
+                            ],
+                          ],
+                        ),
+                      ),
 
               // Calculate Button
               SizedBox(

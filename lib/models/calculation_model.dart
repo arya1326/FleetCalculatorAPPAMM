@@ -9,6 +9,7 @@ class CalculationModel {
   final String haulerName;
   final double speed;
   final double loadingTime;
+  final double spottingTime;
   final double dumpingTime;
   final double cycleTime;
   final int recommendedHauler;
@@ -27,6 +28,7 @@ class CalculationModel {
     required this.haulerName,
     required this.speed,
     required this.loadingTime,
+    required this.spottingTime,
     required this.dumpingTime,
     required this.cycleTime,
     required this.recommendedHauler,
@@ -47,6 +49,7 @@ class CalculationModel {
       'haulerName': haulerName,
       'speed': speed,
       'loadingTime': loadingTime,
+      'spottingTime': spottingTime,
       'dumpingTime': dumpingTime,
       'cycleTime': cycleTime,
       'recommendedHauler': recommendedHauler,
@@ -68,6 +71,7 @@ class CalculationModel {
       haulerName: map['haulerName']?.toString() ?? '',
       speed: double.tryParse(map['speed'].toString()) ?? 0.0,
       loadingTime: double.tryParse(map['loadingTime'].toString()) ?? 0.0,
+      spottingTime: double.tryParse(map['spottingTime'].toString()) ?? 0.0,
       dumpingTime: double.tryParse(map['dumpingTime'].toString()) ?? 0.0,
       cycleTime: double.tryParse(map['cycleTime'].toString()) ?? 0.0,
       recommendedHauler: int.tryParse(map['recommendedHauler'].toString()) ?? 0,
