@@ -36,6 +36,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   final Map<String, double> _obLoaderOptions = {
     'PC200 (100 BCM/Jam)': 100,
     'PC500 (200 BCM/Jam)': 200,
+    'PC850 (350 BCM/Jam)': 350,
     'PC1250 (470 BCM/Jam)': 470,
   };
   final Map<String, double> _obHaulerOptions = {
@@ -45,6 +46,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   final Map<String, double> _coalLoaderOptions = {
     'PC200 (193 Ton/Jam)': 193,
     'PC500 (283 Ton/Jam)': 283,
+    'PC850 (420 Ton/Jam)': 420,
   };
   final Map<String, double> _coalHaulerOptions = {
     'AROCS 4845K (37 TON)': 37,
@@ -181,11 +183,12 @@ Future<void> _calculateAndSave() async {
   final travelTimeEmpty = (distance / emptySpeed) * 60;
   
   // CT = Travel Time Loading + Travel Time Empty + (Spotting Time x 2) + Loading Time + Dumping Time
-  final cycleTime = travelTimeLoading + travelTimeEmpty + (spottingTime * 2) + loadingTime + dumpingTime;
-  
+  final cycleTimeRaw = travelTimeLoading + travelTimeEmpty + (spottingTime * 2) + loadingTime + dumpingTime;
+  final cycleTime = double.parse(cycleTimeRaw.toStringAsFixed(1));
+
   // Recommended Hauler = loaderProd / (haulerCap / cycleTime * 60)
   // Atau: loaderProd * cycleTime / (haulerCap * 60)
-  final recommended = (loaderProd * cycleTime / (_haulerCap * 60)).ceil();
+  final recommended = (loaderProd * cycleTime / (_haulerCap * 60)).round();
   
   // Match Factor = (actualHauler * haulerCap * 60) / (loaderProd * cycleTime)
   final matchFactorRaw = (actualHauler * _haulerCap * 60) / (loaderProd * cycleTime);
@@ -778,7 +781,7 @@ Future<void> _calculateAndSave() async {
                     Expanded(
                       child: _buildResultTile(
                         'Cycle Time',
-                        _cycleTime!.toStringAsFixed(2),
+                        _cycleTime!.toStringAsFixed(1),
                         'menit',
                         Icons.timer_rounded,
                         const Color(0xFF1565C0),
