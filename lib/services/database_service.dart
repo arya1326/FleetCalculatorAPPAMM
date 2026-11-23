@@ -5,9 +5,9 @@ class DatabaseService {
   // Gunakan singleton ApiService agar cookie tidak hilang antar instance
   final ApiService _apiService = ApiService();
 
-  Future<void> saveCalculation(
+  Future<Map<String, dynamic>> saveCalculation(
       CalculationModel calculation, String userEmail) async {
-    await _apiService.saveCalculation(calculation);
+    return _apiService.saveCalculation(calculation);
   }
 
   Future<List<CalculationModel>> getCalculations(String userEmail) async {
@@ -24,8 +24,7 @@ class DatabaseService {
     await _apiService.clearHistory();
   }
 
-  Future<void> deleteCalculation(
-      String userEmail, String calculationId) async {
+  Future<void> deleteCalculation(String userEmail, String calculationId) async {
     await _apiService.deleteCalculation(calculationId);
   }
 }

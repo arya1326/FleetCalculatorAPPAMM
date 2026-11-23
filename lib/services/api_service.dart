@@ -41,12 +41,12 @@ class ApiService {
   }
 
   // ── Auth ───────────────────────────────────────────────────────────────────
-  Future<Map<String, dynamic>> login(String name, String nrp) async {
+  Future<Map<String, dynamic>> login(String nrp) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.login),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'nrp': nrp}), // Kirim nama dan NRP
+        body: jsonEncode({'nrp': nrp}),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
@@ -71,7 +71,10 @@ class ApiService {
         body: jsonEncode(calculation.toMap()),
       );
       final data = jsonDecode(response.body);
-      return {'success': response.statusCode == 201, 'message': data['message']};
+      return {
+        'success': response.statusCode == 201,
+        'message': data['message']
+      };
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }
@@ -93,7 +96,8 @@ class ApiService {
         if (data['success'] == true && data['calculations'] != null) {
           final List<dynamic> list = data['calculations'];
           return list
-              .map((json) => CalculationModel.fromMap(json['id'].toString(), json))
+              .map((json) =>
+                  CalculationModel.fromMap(json['id'].toString(), json))
               .toList();
         }
       } else if (response.statusCode == 401) {

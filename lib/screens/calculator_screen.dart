@@ -4,7 +4,9 @@ import '../services/database_service.dart';
 import '../models/calculation_model.dart';
 
 class CalculatorScreen extends StatefulWidget {
-  const CalculatorScreen({super.key});
+  const CalculatorScreen({super.key, this.isCustom = false});
+
+  final bool isCustom;
 
   @override
   State<CalculatorScreen> createState() => _CalculatorScreenState();
@@ -20,18 +22,26 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       TextEditingController(text: '2');
   final TextEditingController _actualHaulerController =
       TextEditingController(text: '5');
-  
+  final TextEditingController _loadingTimeController =
+      TextEditingController(text: '3.9');
+  final TextEditingController _loadingSpeedController =
+      TextEditingController(text: '19');
+  final TextEditingController _emptySpeedController =
+      TextEditingController(text: '20');
+  final TextEditingController _spottingTimeController =
+      TextEditingController(text: '0.5');
+  final TextEditingController _dumpingTimeController =
+      TextEditingController(text: '1.0');
+
   // FIXED VALUES - OVERBURDEN
   static const double obLoadingTime = 3.9;
-  static const double obSpeed = 20;
-  static const double obSpottingTime = 0.5;  // Spotting time
-  static const double obDumpingTime = 1.0;    // Dumping time (1 menit)
-  
+  static const double obSpottingTime = 0.5; // Spotting time
+  static const double obDumpingTime = 1.0; // Dumping time (1 menit)
+
   // FIXED VALUES - COAL
   static const double coalLoadingTime = 1.5;
-  static const double coalSpeed = 20;
   static const double coalSpottingTime = 0.6; // Spotting time
-  static const double coalDumpingTime = 1.0;   // Dumping time (1 menit)
+  static const double coalDumpingTime = 1.0; // Dumping time (1 menit)
 
   final Map<String, double> _obLoaderOptions = {
     'PC200 (100 BCM/Jam)': 100,
@@ -47,9 +57,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     'PC200 (193 Ton/Jam)': 193,
     'PC500 (283 Ton/Jam)': 283,
     'PC850 (420 Ton/Jam)': 420,
+    'PDTY PC400 (246 Ton/Jam)': 246,
   };
   final Map<String, double> _coalHaulerOptions = {
     'AROCS 4845K (37 TON)': 37,
+    'HD785 (55.9 Ton)': 55.9,
   };
 
   String _selectedLoader = '';
@@ -62,7 +74,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   double? _matchFactor;
   String? _status;
   bool _isCalculated = false;
-  bool _hasNewCalculation = false; // Flag untuk tracking apakah ada perhitungan baru
+  bool _hasNewCalculation =
+      false; // Flag untuk tracking apakah ada perhitungan baru
 
   late AnimationController _resultAnimController;
   late Animation<double> _resultScaleAnim;
@@ -74,9 +87,10 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     _resultAnimController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
     _resultScaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-        CurvedAnimation(parent: _resultAnimController, curve: Curves.easeOutBack));
-    _resultFadeAnim = CurvedAnimation(
-        parent: _resultAnimController, curve: Curves.easeOut);
+        CurvedAnimation(
+            parent: _resultAnimController, curve: Curves.easeOutBack));
+    _resultFadeAnim =
+        CurvedAnimation(parent: _resultAnimController, curve: Curves.easeOut);
     _updateOptions();
   }
 
@@ -85,23 +99,31 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     _resultAnimController.dispose();
     _distanceController.dispose();
     _actualHaulerController.dispose();
+    _loadingTimeController.dispose();
+    _loadingSpeedController.dispose();
+    _emptySpeedController.dispose();
+    _spottingTimeController.dispose();
+    _dumpingTimeController.dispose();
     super.dispose();
   }
 
   void _updateOptions() {
-    setState(() {
-      if (_selectedMaterial == 'OB') {
-        _selectedLoader = _obLoaderOptions.keys.first;
-        _selectedHauler = _obHaulerOptions.keys.first;
-        _loaderProd = _obLoaderOptions[_selectedLoader]!;
-        _haulerCap = _obHaulerOptions[_selectedHauler]!;
-      } else {
-        _selectedLoader = _coalLoaderOptions.keys.first;
-        _selectedHauler = _coalHaulerOptions.keys.first;
-        _loaderProd = _coalLoaderOptions[_selectedLoader]!;
-        _haulerCap = _coalHaulerOptions[_selectedHauler]!;
-      }
-    });
+    final loaderOptions =
+        _selectedMaterial == 'OB' ? _obLoaderOptions : _coalLoaderOptions;
+    final haulerOptions =
+        _selectedMaterial == 'OB' ? _obHaulerOptions : _coalHaulerOptions;
+    _selectedLoader = loaderOptions.keys.first;
+    _selectedHauler = haulerOptions.keys.first;
+    _loaderProd = loaderOptions[_selectedLoader]!;
+    _haulerCap = haulerOptions[_selectedHauler]!;
+
+    if (widget.isCustom) {
+      _loadingTimeController.text = _selectedMaterial == 'OB' ? '3.9' : '1.5';
+      _loadingSpeedController.text = '19';
+      _emptySpeedController.text = '20';
+      _spottingTimeController.text = _selectedMaterial == 'OB' ? '0.5' : '0.6';
+      _dumpingTimeController.text = '1.0';
+    }
   }
 
   void _onLoaderChanged(String? value) {
@@ -130,10 +152,6 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     return _selectedMaterial == 'OB' ? obLoadingTime : coalLoadingTime;
   }
 
-  double _getSpeed() {
-    return _selectedMaterial == 'OB' ? obSpeed : coalSpeed;
-  }
-
   double _getSpottingTime() {
     return _selectedMaterial == 'OB' ? obSpottingTime : coalSpottingTime;
   }
@@ -143,121 +161,163 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   }
 
   double _getEffectiveLoaderProd() {
-  // LANGSUNG return loaderProd (tanpa * 0.9)
+    // LANGSUNG return loaderProd (tanpa * 0.9)
     return _loaderProd;
   }
 
-Future<void> _calculateAndSave() async {
-  final distance = double.tryParse(_distanceController.text) ?? 0;
-  final actualHauler = int.tryParse(_actualHaulerController.text) ?? 0;
+  Future<void> _calculateAndSave() async {
+    final distance = double.tryParse(_distanceController.text) ?? 0;
+    final actualHauler = int.tryParse(_actualHaulerController.text) ?? 0;
 
-  if (distance <= 0 || actualHauler <= 0) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.warning_rounded, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Harap isi semua nilai dengan benar'),
-          ],
-        ),
-        backgroundColor: Colors.orange.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-    return;
-  }
+    final loadingTime = widget.isCustom
+        ? double.tryParse(_loadingTimeController.text)
+        : _getLoadingTime();
+    final loadingSpeed =
+        widget.isCustom ? double.tryParse(_loadingSpeedController.text) : 19.0;
+    final emptySpeed =
+        widget.isCustom ? double.tryParse(_emptySpeedController.text) : 20.0;
+    final spottingTime = widget.isCustom
+        ? double.tryParse(_spottingTimeController.text)
+        : _getSpottingTime();
+    final dumpingTime = widget.isCustom
+        ? double.tryParse(_dumpingTimeController.text)
+        : _getDumpingTime();
 
-  final loadingTime = _getLoadingTime();
-  final loadingSpeed = 19.0;  // Loading speed = 19 km/jam
-  final emptySpeed = 20.0;    // Empty speed = 20 km/jam
-  final spottingTime = _getSpottingTime();
-  final dumpingTime = _getDumpingTime();
-  final loaderProd = _getEffectiveLoaderProd();  // LANGSUNG tanpa * 0.9
-
-  // PERHITUNGAN TRAVEL TIME (dalam menit)
-  // Travel time loading = distance / loadingSpeed * 60
-  // Travel time empty = distance / emptySpeed * 60
-  final travelTimeLoading = (distance / loadingSpeed) * 60;
-  final travelTimeEmpty = (distance / emptySpeed) * 60;
-  
-  // CT = Travel Time Loading + Travel Time Empty + (Spotting Time x 2) + Loading Time + Dumping Time
-  final cycleTimeRaw = travelTimeLoading + travelTimeEmpty + (spottingTime * 2) + loadingTime + dumpingTime;
-  final cycleTime = double.parse(cycleTimeRaw.toStringAsFixed(1));
-
-  // Recommended Hauler = loaderProd / (haulerCap / cycleTime * 60)
-  // Atau: loaderProd * cycleTime / (haulerCap * 60)
-  final recommended = (loaderProd * cycleTime / (_haulerCap * 60)).round();
-  
-  // Match Factor = (actualHauler * haulerCap * 60) / (loaderProd * cycleTime)
-  final matchFactorRaw = (actualHauler * _haulerCap * 60) / (loaderProd * cycleTime);
-  // Bulatkan ke 1 digit di belakang koma
-  final matchFactor = double.parse(matchFactorRaw.toStringAsFixed(1));
-
-  // STATUS berdasarkan perbandingan actual vs recommended
-  String status;
-  if (actualHauler < recommended) {
-    status = 'UNDER TRUCK';
-  } else if (actualHauler == recommended) {
-    status = 'IDEAL MATCH';
-  } else {
-    status = 'OVER TRUCK';
-  }
-
-  setState(() {
-    _cycleTime = cycleTime;
-    _recommendedHauler = recommended;
-    _matchFactor = matchFactor;
-    _status = status;
-    _isCalculated = true;
-    _hasNewCalculation = true;
-  });
-
-  _resultAnimController.forward(from: 0);
-
-  final currentUser = await _authService.getCurrentUser();
-  if (currentUser != null) {
-    final calculation = CalculationModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      material: _selectedMaterial,
-      distance: distance,
-      actualHauler: actualHauler,
-      loaderProd: loaderProd,  // LANGSUNG tanpa * 0.9
-      loaderName: _selectedLoader,
-      haulerCap: _haulerCap,
-      haulerName: _selectedHauler,
-      speed: emptySpeed,  // Simpan empty speed sebagai reference
-      loadingTime: loadingTime,
-      spottingTime: spottingTime,
-      dumpingTime: dumpingTime,
-      cycleTime: cycleTime,
-      recommendedHauler: recommended,
-      matchFactor: matchFactor,
-      status: status,
-      timestamp: DateTime.now(),
-    );
-    await _databaseService.saveCalculation(calculation, currentUser['email']);
-    
-    if (mounted) {
+    if (distance <= 0 ||
+        actualHauler <= 0 ||
+        loadingTime == null ||
+        loadingTime <= 0 ||
+        loadingSpeed == null ||
+        loadingSpeed <= 0 ||
+        emptySpeed == null ||
+        emptySpeed <= 0 ||
+        spottingTime == null ||
+        spottingTime <= 0 ||
+        dumpingTime == null ||
+        dumpingTime <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              Icon(Icons.warning_rounded, color: Colors.white),
               SizedBox(width: 8),
-              Text('Perhitungan berhasil disimpan'),
+              Text('Isi nilai dengan benar dan harus lebih dari 0'),
             ],
           ),
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: Colors.orange.shade700,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
+      return;
+    }
+
+    final loaderProd = _getEffectiveLoaderProd(); // LANGSUNG tanpa * 0.9
+
+    // PERHITUNGAN TRAVEL TIME (dalam menit)
+    // Travel time loading = distance / loadingSpeed * 60
+    // Travel time empty = distance / emptySpeed * 60
+    final travelTimeLoading = (distance / loadingSpeed) * 60;
+    final travelTimeEmpty = (distance / emptySpeed) * 60;
+
+    // CT = Travel Time Loading + Travel Time Empty + (Spotting Time x 2) + Loading Time + Dumping Time
+    final cycleTimeRaw = travelTimeLoading +
+        travelTimeEmpty +
+        (spottingTime * 2) +
+        loadingTime +
+        dumpingTime;
+    final cycleTime = double.parse(cycleTimeRaw.toStringAsFixed(1));
+
+    // Recommended Hauler = loaderProd / (haulerCap / cycleTime * 60)
+    // Atau: loaderProd * cycleTime / (haulerCap * 60)
+    final recommended = (loaderProd * cycleTime / (_haulerCap * 60)).round();
+
+    // Match Factor = (actualHauler * haulerCap * 60) / (loaderProd * cycleTime)
+    final matchFactorRaw =
+        (actualHauler * _haulerCap * 60) / (loaderProd * cycleTime);
+    // Bulatkan ke 1 digit di belakang koma
+    final matchFactor = double.parse(matchFactorRaw.toStringAsFixed(1));
+
+    // STATUS berdasarkan perbandingan actual vs recommended
+    String status;
+    if (actualHauler < recommended) {
+      status = 'UNDER TRUCK';
+    } else if (actualHauler == recommended) {
+      status = 'IDEAL MATCH';
+    } else {
+      status = 'OVER TRUCK';
+    }
+
+    setState(() {
+      _cycleTime = cycleTime;
+      _recommendedHauler = recommended;
+      _matchFactor = matchFactor;
+      _status = status;
+      _isCalculated = true;
+      _hasNewCalculation = true;
+    });
+
+    _resultAnimController.forward(from: 0);
+
+    final currentUser = await _authService.getCurrentUser();
+    if (currentUser != null) {
+      final calculation = CalculationModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        material: _selectedMaterial,
+        distance: distance,
+        actualHauler: actualHauler,
+        loaderProd: loaderProd, // LANGSUNG tanpa * 0.9
+        loaderName: _selectedLoader,
+        haulerCap: _haulerCap,
+        haulerName: _selectedHauler,
+        loadingSpeed: loadingSpeed,
+        speed: emptySpeed, // Simpan empty speed sebagai reference
+        loadingTime: loadingTime,
+        spottingTime: spottingTime,
+        dumpingTime: dumpingTime,
+        cycleTime: cycleTime,
+        recommendedHauler: recommended,
+        matchFactor: matchFactor,
+        status: status,
+        timestamp: DateTime.now(),
+      );
+      final saveResult = await _databaseService.saveCalculation(
+          calculation, currentUser['email']);
+
+      if (mounted) {
+        final saved = saveResult['success'] == true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  saved ? Icons.check_circle_rounded : Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    saved
+                        ? 'Perhitungan berhasil disimpan'
+                        : 'Hasil dihitung, tetapi gagal disimpan: '
+                            '${saveResult['message'] ?? 'Kesalahan server'}',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor:
+                saved ? Colors.green.shade700 : Colors.orange.shade800,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
-}
 
   Color _getStatusColor() {
     if (_status == 'UNDER TRUCK') return const Color(0xFFB71C1C);
@@ -282,9 +342,9 @@ Future<void> _calculateAndSave() async {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         appBar: AppBar(
-          title: const Text(
-            'Fleet Calculator',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          title: Text(
+            widget.isCustom ? 'Custom Calculation' : 'Fleet Calculator',
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           backgroundColor: const Color(0xFFB71C1C),
           foregroundColor: Colors.white,
@@ -434,53 +494,104 @@ Future<void> _calculateAndSave() async {
               ),
               const SizedBox(height: 24),
 
+              if (widget.isCustom) ...[
+                _buildSection(
+                  title: 'Parameter Custom',
+                  icon: Icons.tune_rounded,
+                  children: [
+                    _buildTextField(
+                      controller: _loadingTimeController,
+                      label: 'Loading Time',
+                      suffix: 'Menit',
+                      icon: Icons.timer_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      controller: _loadingSpeedController,
+                      label: 'Loading Speed',
+                      suffix: 'Km/jam',
+                      icon: Icons.speed_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      controller: _emptySpeedController,
+                      label: 'Empty Speed',
+                      suffix: 'Km/jam',
+                      icon: Icons.speed_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      controller: _spottingTimeController,
+                      label: 'Spotting Time',
+                      suffix: 'Menit (setiap proses)',
+                      icon: Icons.gps_fixed_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      controller: _dumpingTimeController,
+                      label: 'Dumping Time',
+                      suffix: 'Menit',
+                      icon: Icons.unarchive_rounded,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+              ],
+
               // Info Panel for Fixed Values
-            Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF8F8),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.2)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.info_outline_rounded, size: 18, color: const Color(0xFFB71C1C)),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Parameter Tetap',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: const Color(0xFFB71C1C),
-                                  ),
-                                ),
-                              ],
+              if (!widget.isCustom)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8F8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: const Color(0xFFB71C1C).withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              size: 18, color: const Color(0xFFB71C1C)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Parameter Tetap',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: const Color(0xFFB71C1C),
                             ),
-                            const SizedBox(height: 10),
-                            if (_selectedMaterial == 'OB') ...[
-                              _buildFixedParam('Loading Time', '3.9 menit'),
-                              _buildFixedParam('Loading Speed', '19 Km/jam'),
-                              _buildFixedParam('Empty Speed', '20 Km/jam'),
-                              _buildFixedParam('Spotting (2x)', '0.5 menit x 2 = 1.0 menit'),
-                              _buildFixedParam('Dumping', '1.0 menit'),
-                              _buildFixedParam('Total Spotting+Dumping', '2.0 menit'),
-                              _buildFixedParam('Efisiensi Loader', '90%'),  // TETAP DITAMPILKAN
-                            ] else ...[
-                              _buildFixedParam('Loading Time', '1.5 menit'),
-                              _buildFixedParam('Loading Speed', '19 Km/jam'),
-                              _buildFixedParam('Empty Speed', '20 Km/jam'),
-                              _buildFixedParam('Spotting (2x)', '0.6 menit x 2 = 1.2 menit'),
-                              _buildFixedParam('Dumping', '1.0 menit'),
-                              _buildFixedParam('Total Spotting+Dumping', '2.2 menit'),
-                              _buildFixedParam('Efisiensi Loader', '90%'),  // TETAP DITAMPILKAN
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 10),
+                      if (_selectedMaterial == 'OB') ...[
+                        _buildFixedParam('Loading Time', '3.9 menit'),
+                        _buildFixedParam('Loading Speed', '19 Km/jam'),
+                        _buildFixedParam('Empty Speed', '20 Km/jam'),
+                        _buildFixedParam(
+                            'Spotting (2x)', '0.5 menit x 2 = 1.0 menit'),
+                        _buildFixedParam('Dumping', '1.0 menit'),
+                        _buildFixedParam('Total Spotting+Dumping', '2.0 menit'),
+                        _buildFixedParam(
+                            'Efisiensi Loader', '90%'), // TETAP DITAMPILKAN
+                      ] else ...[
+                        _buildFixedParam('Loading Time', '1.5 menit'),
+                        _buildFixedParam('Loading Speed', '19 Km/jam'),
+                        _buildFixedParam('Empty Speed', '20 Km/jam'),
+                        _buildFixedParam(
+                            'Spotting (2x)', '0.6 menit x 2 = 1.2 menit'),
+                        _buildFixedParam('Dumping', '1.0 menit'),
+                        _buildFixedParam('Total Spotting+Dumping', '2.2 menit'),
+                        _buildFixedParam(
+                            'Efisiensi Loader', '90%'), // TETAP DITAMPILKAN
+                      ],
+                    ],
+                  ),
+                ),
 
               // Calculate Button
               SizedBox(
@@ -497,14 +608,16 @@ Future<void> _calculateAndSave() async {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.calculate_rounded, size: 22),
-                      SizedBox(width: 10),
+                      const Icon(Icons.calculate_rounded, size: 22),
+                      const SizedBox(width: 10),
                       Text(
-                        'HITUNG MATCH FACTOR',
-                        style: TextStyle(
+                        widget.isCustom
+                            ? 'HITUNG CUSTOM MATCH FACTOR'
+                            : 'HITUNG MATCH FACTOR',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
@@ -590,7 +703,8 @@ Future<void> _calculateAndSave() async {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF8F8),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
             ),
             child: Row(
@@ -658,8 +772,7 @@ Future<void> _calculateAndSave() async {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFFB71C1C), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
@@ -700,8 +813,7 @@ Future<void> _calculateAndSave() async {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFFB71C1C), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFB71C1C), width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 14),

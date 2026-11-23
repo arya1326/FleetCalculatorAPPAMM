@@ -9,9 +9,9 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _nrpController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
@@ -28,14 +28,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+        .animate(
+            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
   }
 
   @override
   void dispose() {
     _animController.dispose();
-    _nameController.dispose();
     _nrpController.dispose();
     super.dispose();
   }
@@ -43,10 +43,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      final success = await _authService.login(
-        _nameController.text.trim(),
-        _nrpController.text.trim(),
-      );
+      final success = await _authService.login(_nrpController.text.trim());
       setState(() => _isLoading = false);
       if (success && mounted) {
         Navigator.pushReplacement(
@@ -60,12 +57,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               children: [
                 Icon(Icons.error_outline, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Nama lengkap atau NRP tidak terdaftar'),
+                Text('NRP tidak terdaftar'),
               ],
             ),
             backgroundColor: Colors.red.shade800,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -83,7 +81,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFB71C1C), Color(0xFFE53935), Color(0xFFEF5350)],
+                colors: [
+                  Color(0xFFB71C1C),
+                  Color(0xFFE53935),
+                  Color(0xFFEF5350)
+                ],
               ),
             ),
           ),
@@ -119,7 +121,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: SlideTransition(
                 position: _slideAnim,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
                   child: Column(
                     children: [
                       const SizedBox(height: 40),
@@ -160,7 +163,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.18),
                           borderRadius: BorderRadius.circular(20),
@@ -204,53 +208,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Masukkan Nama Lengkap dan NRP Anda',
+                                'Masukkan NRP Anda',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey.shade500,
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              // Field Nama Lengkap
-                              TextFormField(
-                                controller: _nameController,
-                                style: const TextStyle(fontSize: 15),
-                                decoration: InputDecoration(
-                                  labelText: 'Nama Lengkap',
-                                  hintText: 'Masukkan nama lengkap Anda',
-                                  prefixIcon: Container(
-                                    margin: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFEBEE),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(Icons.person_rounded,
-                                        color: Color(0xFFB71C1C), size: 20),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey.shade50,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFB71C1C), width: 2),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 16),
-                                ),
-                                validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Nama lengkap tidak boleh kosong';
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
                               // Field NRP
                               TextFormField(
                                 controller: _nrpController,
@@ -272,11 +236,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade200),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide:
+                                        BorderSide(color: Colors.grey.shade200),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -287,8 +253,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       vertical: 16, horizontal: 16),
                                 ),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) return 'NRP tidak boleh kosong';
-                                  if (v.length < 8) return 'NRP minimal 8 digit'; // Ubah dari 5 ke 8
+                                  if (v == null || v.isEmpty)
+                                    return 'NRP tidak boleh kosong';
+                                  if (v.length < 8)
+                                    return 'NRP minimal 8 digit'; // Ubah dari 5 ke 8
                                   return null;
                                 },
                               ),

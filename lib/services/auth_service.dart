@@ -5,12 +5,11 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _apiService = ApiService(); // singleton
 
-  static const String _userKey       = 'current_user';
+  static const String _userKey = 'current_user';
   static const String _isLoggedInKey = 'isLoggedIn';
 
-  Future<bool> login(String name, String nrp) async {
-    // Login dengan nama lengkap dan NRP
-    final result = await _apiService.login(name, nrp);
+  Future<bool> login(String nrp) async {
+    final result = await _apiService.login(nrp);
     if (result['success'] == true) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userKey, jsonEncode(result['user']));

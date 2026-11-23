@@ -7,6 +7,7 @@ class CalculationModel {
   final String loaderName;
   final double haulerCap;
   final String haulerName;
+  final double loadingSpeed;
   final double speed;
   final double loadingTime;
   final double spottingTime;
@@ -26,6 +27,7 @@ class CalculationModel {
     required this.loaderName,
     required this.haulerCap,
     required this.haulerName,
+    required this.loadingSpeed,
     required this.speed,
     required this.loadingTime,
     required this.spottingTime,
@@ -47,6 +49,7 @@ class CalculationModel {
       'loaderName': loaderName,
       'haulerCap': haulerCap,
       'haulerName': haulerName,
+      'loadingSpeed': loadingSpeed,
       'speed': speed,
       'loadingTime': loadingTime,
       'spottingTime': spottingTime,
@@ -69,6 +72,8 @@ class CalculationModel {
       loaderName: map['loaderName']?.toString() ?? '',
       haulerCap: double.tryParse(map['haulerCap'].toString()) ?? 0.0,
       haulerName: map['haulerName']?.toString() ?? '',
+      loadingSpeed:
+          double.tryParse(map['loadingSpeed']?.toString() ?? '') ?? 19.0,
       speed: double.tryParse(map['speed'].toString()) ?? 0.0,
       loadingTime: double.tryParse(map['loadingTime'].toString()) ?? 0.0,
       spottingTime: double.tryParse(map['spottingTime'].toString()) ?? 0.0,
@@ -77,7 +82,8 @@ class CalculationModel {
       recommendedHauler: int.tryParse(map['recommendedHauler'].toString()) ?? 0,
       matchFactor: double.tryParse(map['matchFactor'].toString()) ?? 0.0,
       status: map['status']?.toString() ?? '',
-      timestamp: DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now(),
+      timestamp:
+          DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now(),
     );
   }
 }

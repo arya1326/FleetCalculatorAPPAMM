@@ -40,7 +40,8 @@ class _HistoryScreenState extends State<HistoryScreen>
 
     final currentUser = await _authService.getCurrentUser();
     if (currentUser != null) {
-      _calculations = await _databaseService.getCalculations(currentUser['email']);
+      _calculations =
+          await _databaseService.getCalculations(currentUser['email']);
     }
 
     setState(() => _isLoading = false);
@@ -68,7 +69,8 @@ class _HistoryScreenState extends State<HistoryScreen>
     final time =
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     if (date == today) return 'Hari ini, $time';
-    if (date == today.subtract(const Duration(days: 1))) return 'Kemarin, $time';
+    if (date == today.subtract(const Duration(days: 1)))
+      return 'Kemarin, $time';
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}, $time';
   }
 
@@ -204,8 +206,8 @@ class _HistoryScreenState extends State<HistoryScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFEBEE),
                     borderRadius: BorderRadius.circular(20),
@@ -279,7 +281,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                     Expanded(
                       child: _buildResultTile(
                         'Match Factor',
-                        calc.matchFactor.toStringAsFixed(1), // 1 digit after comma
+                        calc.matchFactor
+                            .toStringAsFixed(1), // 1 digit after comma
                         '',
                         Icons.analytics_rounded,
                         statusColor,
@@ -355,8 +358,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                           ),
                           const SizedBox(width: 12),
                           _buildInfoItem(
-                            'Speed',
-                            '${calc.speed} Km/jam',
+                            'Speed Muatan/Kosong',
+                            '${calc.loadingSpeed}/${calc.speed} Km/jam',
                             Icons.speed_rounded,
                           ),
                           const SizedBox(width: 12),
@@ -447,7 +450,8 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),

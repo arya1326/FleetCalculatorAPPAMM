@@ -2,6 +2,8 @@ class ApiConfig {
   // Ganti dengan IP server/localhost Anda
   // Untuk emulator Android: 10.0.2.2
   // Untuk device fisik: IP komputer/server
+  // https://paleturquoise-louse-896113.hostingersite.com
+  // http://192.168.100.20/backend
   static const String baseUrl = 'https://paleturquoise-louse-896113.hostingersite.com';
   
   // Endpoints

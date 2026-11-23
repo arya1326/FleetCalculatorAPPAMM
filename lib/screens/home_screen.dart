@@ -13,7 +13,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _databaseService = DatabaseService();
   CalculationModel? _lastCalculation;
@@ -66,7 +67,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFB71C1C),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Logout'),
           ),
@@ -103,7 +105,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final time =
         '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     if (date == today) return 'Hari ini, $time';
-    if (date == today.subtract(const Duration(days: 1))) return 'Kemarin, $time';
+    if (date == today.subtract(const Duration(days: 1)))
+      return 'Kemarin, $time';
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}, $time';
   }
 
@@ -254,46 +257,76 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     children: [
                       const SizedBox(height: 4),
                       // Action Cards
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: _buildActionCard(
-                              icon: Icons.calculate_rounded,
-                              title: 'Kalkulasi',
-                              subtitle: 'Hitung Match Factor',
-                              gradientColors: [
-                                const Color(0xFFB71C1C),
-                                const Color(0xFFE53935),
-                              ],
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const CalculatorScreen()),
-                                );
-                                if (result == true) _loadData();
-                              },
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildActionCard(
+                                  icon: Icons.calculate_rounded,
+                                  title: 'Kalkulasi',
+                                  subtitle: 'Hitung Match Factor',
+                                  gradientColors: [
+                                    const Color(0xFFB71C1C),
+                                    const Color(0xFFE53935),
+                                  ],
+                                  onTap: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const CalculatorScreen(),
+                                      ),
+                                    );
+                                    if (result == true) _loadData();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _buildActionCard(
+                                  icon: Icons.tune_rounded,
+                                  title: 'Custom Calculation',
+                                  subtitle: 'Atur parameter sendiri',
+                                  gradientColors: [
+                                    const Color(0xFF6A1B9A),
+                                    const Color(0xFF8E24AA),
+                                  ],
+                                  onTap: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const CalculatorScreen(
+                                          isCustom: true,
+                                        ),
+                                      ),
+                                    );
+                                    if (result == true) _loadData();
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: _buildActionCard(
-                              icon: Icons.history_rounded,
-                              title: 'History',
-                              subtitle: 'Lihat riwayat',
-                              gradientColors: [
-                                const Color(0xFF37474F),
-                                const Color(0xFF546E7A),
-                              ],
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const HistoryScreen()),
-                                );
-                                _loadData();
-                              },
-                            ),
+                          const SizedBox(height: 14),
+                          // History: rata kiri-kanan memenuhi lebar layar
+                          _buildActionCard(
+                            icon: Icons.history_rounded,
+                            title: 'History',
+                            subtitle: 'Lihat riwayat',
+                            gradientColors: [
+                              const Color(0xFF37474F),
+                              const Color(0xFF546E7A),
+                            ],
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HistoryScreen(),
+                                ),
+                              );
+                              _loadData();
+                            },
                           ),
                         ],
                       ),
@@ -356,6 +389,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         height: 130,
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -561,9 +595,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   children: [
                     Expanded(
                       child: _buildInfoChip(
-                          Icons.route_rounded,
-                          '${calc.distance} KM',
-                          'Jarak'),
+                          Icons.route_rounded, '${calc.distance} KM', 'Jarak'),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -574,10 +606,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _buildInfoChip(
-                          Icons.local_shipping_outlined,
-                          '${calc.actualHauler} Unit',
-                          'Aktual'),
+                      child: _buildInfoChip(Icons.local_shipping_outlined,
+                          '${calc.actualHauler} Unit', 'Aktual'),
                     ),
                   ],
                 ),
