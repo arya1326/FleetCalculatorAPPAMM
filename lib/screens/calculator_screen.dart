@@ -57,11 +57,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     'PC200 (193 Ton/Jam)': 193,
     'PC500 (283 Ton/Jam)': 283,
     'PC850 (420 Ton/Jam)': 420,
-    'PDTY PC400 (246 Ton/Jam)': 246,
+    'PC400 (246 Ton/Jam)': 246,
   };
   final Map<String, double> _coalHaulerOptions = {
     'AROCS 4845K (37 TON)': 37,
-    'HD785 (55.9 Ton)': 55.9,
+    'HD785 (55.9 TON)': 55.9,
   };
 
   String _selectedLoader = '';

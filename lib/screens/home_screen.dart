@@ -214,6 +214,8 @@ class _HomeScreenState extends State<HomeScreen>
                               children: [
                                 Text(
                                   'Halo, ${_currentUser?['name'] ?? 'User'} 👋',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
@@ -230,6 +232,8 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                   child: const Text(
                                     'Fleet Calculator · AMM KPC-BGE',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -260,7 +264,9 @@ class _HomeScreenState extends State<HomeScreen>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
+                          IntrinsicHeight(
+                            child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
                                 child: _buildActionCard(
@@ -307,6 +313,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 ),
                               ),
                             ],
+                            ),
                           ),
                           const SizedBox(height: 14),
                           // History: rata kiri-kanan memenuhi lebar layar
@@ -379,6 +386,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // Skala UI berdasarkan lebar layar (acuan 360dp)
+  double _scale(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    return (w / 360).clamp(0.9, 1.25).toDouble();
+  }
+
   Widget _buildActionCard({
     required IconData icon,
     required String title,
@@ -386,11 +399,13 @@ class _HomeScreenState extends State<HomeScreen>
     required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
+    final s = _scale(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 130,
+        // Tinggi fleksibel: minimal 120, tumbuh mengikuti isi (tidak terpotong)
+        constraints: BoxConstraints(minHeight: 120 * s),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -406,58 +421,63 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              bottom: -15,
-              right: -15,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              Positioned(
+                bottom: -15,
+                right: -15,
+                child: Container(
+                  width: 80 * s,
+                  height: 80 * s,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+              Padding(
+                padding: EdgeInsets.all(16 * s),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8 * s),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 24 * s),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 26),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    SizedBox(height: 14 * s),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16 * s,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
                       ),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12 * s,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -513,11 +533,15 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ],
                 ),
-                Text(
+                Flexible(
+                  child: Text(
                   _formatDateTime(calc.timestamp),
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade500,
+                  ),
                   ),
                 ),
               ],
@@ -631,38 +655,44 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 6),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: value,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                if (unit.isNotEmpty)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                children: [
                   TextSpan(
-                    text: ' $unit',
+                    text: value,
                     style: TextStyle(
-                      color: color.withOpacity(0.7),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                      color: color,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-              ],
+                  if (unit.isNotEmpty)
+                    TextSpan(
+                      text: ' $unit',
+                      style: TextStyle(
+                        color: color.withOpacity(0.7),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 11,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -689,6 +719,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
           ),
         ],
